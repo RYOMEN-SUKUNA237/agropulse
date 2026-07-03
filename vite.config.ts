@@ -85,6 +85,20 @@ export default defineConfig(({ mode }) => {
         '@': path.resolve(__dirname, '.'),
       },
     },
+    optimizeDeps: {
+      exclude: ['@tensorflow/tfjs-tflite']
+    },
+    build: {
+      rollupOptions: {
+        onwarn(warning, warn) {
+          // Suppress module resolution warnings for TFLite
+          if (warning.message?.includes('Could not resolve')) {
+            return;
+          }
+          warn(warning);
+        }
+      }
+    },
     server: {
       // HMR is disabled in AI Studio via DISABLE_HMR env var.
       // Do not modify—file watching is disabled to prevent flickering during agent edits.
