@@ -59,14 +59,18 @@ type TFLiteModel = { predict: (input: unknown) => unknown };
 const modelCache = new Map<string, TFLiteModel>();
 const classMapCache = new Map<string, Record<string, string>>();
 
-let tfliteModule: typeof import('@tensorflow/tfjs-tflite') | null = null;
-
 async function getTFLite() {
-  if (!tfliteModule) {
-    tfliteModule = await import('@tensorflow/tfjs-tflite');
-    tfliteModule.setWasmPath('/wasm/');
+  // TFLite is loaded globally via CDN in index.html
+  if (!(window as any).tf?.tflite) {
+    throw new Error('TFLite not loaded. Ensure index.html includes the CDN script.');
   }
-  return tfliteModule;
+  const tflite = (window as any).tf.tflite;
+  // setWasmPath is called once per app lifecycle
+  if (!tflite._wasmPathSet) {
+    tflite.setWasmPath('/wasm/');
+    tflite._wasmPathSet = true;
+  }
+  return tflite;
 }
 
 // ──────────────────────────────────────────────────────────────────
