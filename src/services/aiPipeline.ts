@@ -59,16 +59,21 @@ type TFLiteModel = { predict: (input: unknown) => unknown };
 const modelCache = new Map<string, TFLiteModel>();
 const classMapCache = new Map<string, Record<string, string>>();
 
-async function getTFLite() {
-  // TFLite is loaded globally via CDN in index.html
-  if (!(window as any).tf?.tflite) {
-    throw new Error('TFLite not loaded. Ensure index.html includes the CDN script.');
+// The TFLite runtime is loaded globally from CDN in index.html.
+// tf-tflite.min.js exposes `window.tflite` (NOT `window.tf.tflite`).
+let wasmPathSet = false;
+
+async function getTFLite(): Promise<any> {
+  const tflite = (window as any).tflite;
+  if (!tflite) {
+    throw new Error(
+      'TFLite runtime not loaded. Ensure index.html includes the tf.min.js and ' +
+      'tf-tflite.min.js CDN scripts (window.tflite is undefined).'
+    );
   }
-  const tflite = (window as any).tf.tflite;
-  // setWasmPath is called once per app lifecycle
-  if (!tflite._wasmPathSet) {
+  if (!wasmPathSet) {
     tflite.setWasmPath('/wasm/');
-    tflite._wasmPathSet = true;
+    wasmPathSet = true;
   }
   return tflite;
 }
@@ -111,7 +116,6 @@ async function loadClassMap(): Promise<Record<string, string>> {
 export function unloadAllModels(): void {
   modelCache.clear();
   classMapCache.clear();
-  tfliteModule = null;
   console.log('[AgroPulse] Model cache cleared');
 }
 
@@ -198,7 +202,10 @@ async function checkModelsAvailable(): Promise<boolean> {
 async function runModelInference(
   input: Float32Array
 ): Promise<{ classIndex: number; confidence: number; allScores: Float32Array }> {
-  const tf    = await import('@tensorflow/tfjs');
+  // Use the CDN-loaded tfjs (window.tf) so tensors share the same runtime as
+  // the CDN tflite model — mixing npm tfjs with CDN tflite breaks predict().
+  const tf    = (window as any).tf;
+  if (!tf) throw new Error('TensorFlow.js not loaded (window.tf undefined).');
   const model = await loadModel();
 
   const inputTensor = tf.tensor4d(input, [1, 224, 224, 3]);
