@@ -6,11 +6,13 @@ import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, '.', '');
+  // Disable PWA plugin on Vercel builds (it conflicts with TFLite module resolution)
+  const isVercelBuild = process.env.VERCEL === '1';
   return {
     plugins: [
       react(),
       tailwindcss(),
-      VitePWA({
+      ...(isVercelBuild ? [] : [VitePWA({
         registerType: 'autoUpdate',
         manifest: {
           name: 'AgroPulse',
@@ -29,6 +31,7 @@ export default defineConfig(({ mode }) => {
         },
         workbox: {
           globPatterns: ['**/*.{js,css,html,ico,png,svg,jpg,jpeg,webmanifest}'],
+          globIgnores: ['**/node_modules/**/*', '**/@tensorflow/**/*'],
           maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5 MB — allows .tflite model
           runtimeCaching: [
             {
@@ -75,7 +78,7 @@ export default defineConfig(({ mode }) => {
             },
           ],
         },
-      }),
+      })]),
     ],
     define: {
       'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
@@ -91,7 +94,6 @@ export default defineConfig(({ mode }) => {
     build: {
       rollupOptions: {
         onwarn(warning, warn) {
-          // Suppress module resolution warnings for TFLite
           if (warning.message?.includes('Could not resolve')) {
             return;
           }
