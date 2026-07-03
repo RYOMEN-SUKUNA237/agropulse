@@ -1,0 +1,32 @@
+{
+  "id": "ngwayannick/agropulse-training-script",
+  "title": "AgroPulse Training Script",
+  "code_file": "kaggle_notebook.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": "true",
+  "enable_gpu": "true",
+  "enable_tpu": "false",
+  "enable_internet": "true",
+  "dataset_sources": [
+    "cookiefinder/tomato-disease-multiple-sources",
+    "nirmalsankalana/rocole-a-robusta-coffee-leaf-images-dataset",
+    "noamaanabdulazeem/jmuben-coffee-dataset",
+    "zaldyjr/cacao-diseases",
+    "serranosebas/enfermedades-cacao-yolov4",
+    "sujaykapadnis/banana-disease-recognition-dataset",
+    "shifatearman/bananalsd",
+    "moro23/maize-disease-dataset",
+    "yasirahmad0810/consolidated-corn-dataset",
+    "smaranjitghose/corn-or-maize-leaf-disease-dataset",
+    "asaahmanasseh/crop-care-dataset-v2",
+    "nirmalsankalana/plantdoc-dataset",
+    "moltean/fruits",
+    "shahriar26s/banana-ripeness-classification-dataset",
+    "harisyunanda/dataset-coffee-cherry",
+    "prasunroy/natural-images",
+    "puneet6060/intel-image-classification"
+  ],
+  "kernel_sources": [],
+  "competition_sources": []
+}

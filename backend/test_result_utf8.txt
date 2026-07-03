@@ -1,0 +1,15 @@
+﻿==================================================
+  AGROPULSE AI DETECTION TEST
+==================================================
+
+[1] Health Check:
+    Engine ready:     True
+    Gemini available: True
+    TFLite models:    none
+
+[2] Sending test image to /api/diagnose...
+    HTTP Status: 422
+    Result: No AI engine available. Configure GEMINI_API_KEY or train TFLite models.
+    Processing: 743ms
+
+==================================================

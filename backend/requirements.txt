@@ -1,0 +1,17 @@
+fastapi==0.115.0
+uvicorn[standard]==0.30.0
+python-multipart==0.0.9
+Pillow==10.4.0
+numpy==1.26.4
+tensorflow==2.16.1
+scikit-learn==1.5.1
+matplotlib==3.9.2
+datasets==3.0.0
+huggingface-hub==0.25.0
+google-genai==1.14.0
+python-dotenv==1.0.1
+aiofiles==24.1.0
+tqdm==4.66.5
+opendatasets==0.1.22
+gdown==5.2.0
+requests==2.32.3

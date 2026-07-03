@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AgroPulse — Model Test Suite</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #0f1e14;
+      color: #d8f3dc;
+      min-height: 100vh;
+      padding: 32px 24px;
+    }
+    h1 { font-size: 1.6rem; font-weight: 700; color: #95d5b2; margin-bottom: 6px; }
+    .subtitle { font-size: 0.85rem; color: #52796f; margin-bottom: 28px; }
+    .card {
+      background: #1b3a2b;
+      border: 1px solid #2d6a4f33;
+      border-radius: 16px;
+      padding: 20px 24px;
+      margin-bottom: 20px;
+    }
+    .card h2 { font-size: 1rem; font-weight: 600; color: #74c69d; margin-bottom: 14px; }
+    .status { font-size: 0.82rem; padding: 6px 12px; border-radius: 8px; display: inline-block; font-weight: 600; margin-bottom: 8px; }
+    .status.ok   { background: #1b4d3e; color: #52b788; }
+    .status.fail { background: #4d1b1b; color: #e76f51; }
+    .status.pending { background: #1b2d3e; color: #74b3ce; }
+    .log {
+      font-family: 'Courier New', monospace;
+      font-size: 0.76rem;
+      color: #95d5b2;
+      background: #0f1e14;
+      border-radius: 10px;
+      padding: 12px 14px;
+      max-height: 200px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+      margin-top: 8px;
+    }
+    table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+    th { text-align: left; color: #52796f; font-size: 0.72rem; text-transform: uppercase; letter-spacing: .06em; padding: 6px 8px; border-bottom: 1px solid #2d6a4f33; }
+    td { padding: 8px; border-bottom: 1px solid #1b3a2b; vertical-align: top; }
+    tr:last-child td { border-bottom: none; }
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      font-weight: 700;
+    }
+    .badge.cocoa  { background:#3d1f0040; color:#c08261; border:1px solid #5a3a22; }
+    .badge.coffee { background:#3d2a1040; color:#d4a96a; border:1px solid #6f4e37; }
+    .badge.tomato { background:#3d150040; color:#e76f51; border:1px solid #b5451b; }
+    .badge.banana { background:#3d360040; color:#e4b800; border:1px solid #8c7300; }
+    .badge.maize  { background:#3d2c0040; color:#e8a000; border:1px solid #8c6200; }
+    .badge.ok     { background:#0d3b2240; color:#52b788; border:1px solid #2d6a4f; }
+    .badge.fail   { background:#3b0d0d40; color:#e76f51; border:1px solid #b52d2d; }
+    .conf-bar {
+      height: 6px;
+      border-radius: 3px;
+      background: #2d6a4f;
+      margin-top: 4px;
+    }
+    .conf-fill { height: 100%; border-radius: 3px; background: #52b788; }
+    button {
+      background: #2d6a4f;
+      color: #d8f3dc;
+      border: none;
+      border-radius: 10px;
+      padding: 10px 22px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    button:hover { background: #40916c; }
+    button:disabled { background: #1b3a2b; color: #52796f; cursor: not-allowed; }
+    #upload-area {
+      border: 2px dashed #2d6a4f;
+      border-radius: 12px;
+      padding: 18px;
+      text-align: center;
+      cursor: pointer;
+      font-size: 0.85rem;
+      color: #52796f;
+      transition: border-color 0.2s;
+      margin-bottom: 12px;
+    }
+    #upload-area:hover { border-color: #52b788; color: #95d5b2; }
+    .summary-row { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 10px; }
+    .summary-box { flex: 1; min-width: 120px; background: #0f2419; border-radius: 10px; padding: 12px 14px; text-align: center; }
+    .summary-box .val { font-size: 1.6rem; font-weight: 800; color: #52b788; }
+    .summary-box .lbl { font-size: 0.7rem; text-transform: uppercase; color: #52796f; margin-top: 2px; }
+    canvas { display: none; }
+    .spinner { display: inline-block; width: 12px; height: 12px; border: 2px solid #52796f; border-top-color: #52b788; border-radius: 50%; animation: spin .7s linear infinite; margin-right: 6px; vertical-align: middle; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.21.0/dist/tf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-tflite@0.0.1-alpha.10/dist/tf-tflite.min.js"></script>
+</head>
+<body>
+
+<h1>🌿 AgroPulse Model Test Suite</h1>
+<p class="subtitle">Tests the <code>agropulse_offline_model.tflite</code> loaded via TFLite WASM in the browser.</p>
+
+<!-- Section 0: Normalization Selector -->
+<div class="card">
+  <h2>🔧 Normalization / Preprocessing Selector</h2>
+  <p style="font-size: 0.8rem; color: #74c69d; margin-bottom: 12px;">Select the pixel normalization required by the model. Try different options if classification output is constant or incorrect.</p>
+  <select id="norm-mode" style="background:#0f2419; color:#d8f3dc; border:1px solid #2d6a4f; border-radius:8px; padding:10px 14px; font-size:0.85rem; font-weight:600; width:100%; max-width:400px; cursor:pointer; outline:none; margin-bottom:10px;">
+    <option value="0_1">[0, 1] Normalization [pixel / 255.0]</option>
+    <option value="neg1_1" selected>[-1, 1] Normalization [(pixel / 127.5) - 1.0] (Keras MobileNetV2 standard — matches main app)</option>
+    <option value="0_255">[0, 255] Raw values [no scaling]</option>
+  </select>
+</div>
+
+<!-- Section 1: Model + Class Map health -->
+<div class="card" id="health-card">
+  <h2>① Health Check — Model & Class Map Files</h2>
+  <span class="status pending" id="health-status"><span class="spinner"></span> Checking…</span>
+  <div class="log" id="health-log"></div>
+</div>
+
+<!-- Section 2: Synthetic tests -->
+<div class="card">
+  <h2>② Synthetic Image Tests (5 auto-generated patterns)</h2>
+  <button id="run-synthetic-btn" disabled>Run Synthetic Tests</button>
+  <div id="synthetic-results" style="margin-top:16px;"></div>
+</div>
+
+<!-- Section 3: Real image upload -->
+<div class="card">
+  <h2>③ Upload Your Own Leaf Image</h2>
+  <div id="upload-area" onclick="document.getElementById('img-upload').click()">
+    📸 Click to upload a leaf photo — the model will diagnose it instantly
+  </div>
+  <input type="file" id="img-upload" accept="image/*" style="display:none" />
+  <div id="upload-result"></div>
+</div>
+
+<!-- Section 4: Summary -->
+<div class="card" id="summary-card" style="display:none">
+  <h2>④ Test Summary</h2>
+  <div class="summary-row">
+    <div class="summary-box"><div class="val" id="sum-total">0</div><div class="lbl">Tests Run</div></div>
+    <div class="summary-box"><div class="val" id="sum-passed" style="color:#52b788">0</div><div class="lbl">Passed</div></div>
+    <div class="summary-box"><div class="val" id="sum-failed" style="color:#e76f51">0</div><div class="lbl">Failed</div></div>
+    <div class="summary-box"><div class="val" id="sum-time">—</div><div class="lbl">Avg Time</div></div>
+  </div>
+</div>
+
+<canvas id="offscreen-canvas"></canvas>
+
+<script type="module">
+// ─── Config ───────────────────────────────────────────────────────
+const MODEL_URL    = '/models/agropulse_offline_model.tflite';
+const CLASSMAP_URL = '/models/agropulse_classes.json';
+const IMG_SIZE     = 224;
+
+// ─── Logging ──────────────────────────────────────────────────────
+const healthLog = document.getElementById('health-log');
+function log(msg) {
+  healthLog.textContent += msg + '\n';
+  healthLog.scrollTop = healthLog.scrollHeight;
+  console.log('[Test]', msg);
+}
+
+// ─── Class map cache ──────────────────────────────────────────────
+let classMap = null;
+let tfliteModel = null;
+let testStats = { total: 0, passed: 0, failed: 0, times: [] };
+
+// ─── Crop from index ──────────────────────────────────────────────
+function cropFromIndex(idx) {
+  if (idx <= 9)  return 'Cocoa';
+  if (idx <= 19) return 'Coffee';
+  if (idx <= 39) return 'Tomato';
+  if (idx <= 48) return 'Banana';
+  return 'Maize';
+}
+
+function cropBadgeClass(crop) {
+  return crop.toLowerCase();
+}
+
+function preprocessImage(imgOrCanvas) {
+  const canvas = document.getElementById('offscreen-canvas');
+  canvas.width  = IMG_SIZE;
+  canvas.height = IMG_SIZE;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(imgOrCanvas, 0, 0, IMG_SIZE, IMG_SIZE);
+  const { data } = ctx.getImageData(0, 0, IMG_SIZE, IMG_SIZE);
+  const f32 = new Float32Array(IMG_SIZE * IMG_SIZE * 3);
+  
+  const normMode = document.getElementById('norm-mode').value;
+  let fi = 0;
+  for (let i = 0; i < data.length; i += 4) {
+    if (normMode === 'neg1_1') {
+      f32[fi++] = (data[i]   / 127.5) - 1.0;
+      f32[fi++] = (data[i+1] / 127.5) - 1.0;
+      f32[fi++] = (data[i+2] / 127.5) - 1.0;
+    } else if (normMode === '0_255') {
+      f32[fi++] = data[i];
+      f32[fi++] = data[i+1];
+      f32[fi++] = data[i+2];
+    } else {
+      f32[fi++] = data[i]   / 255;
+      f32[fi++] = data[i+1] / 255;
+      f32[fi++] = data[i+2] / 255;
+    }
+  }
+  return f32;
+}
+
+// ─── Draw synthetic canvas with specific colour pattern ───────────
+function makeSyntheticCanvas(label) {
+  const c = document.createElement('canvas');
+  c.width = c.height = IMG_SIZE;
+  const ctx = c.getContext('2d');
+  const patterns = {
+    'Healthy Green':   { bg: '#2d6a2d', spots: '#1a4d1a', r:  40, g: 140, b:  40 },
+    'Rust Brown':      { bg: '#6b3a1f', spots: '#8b4513', r: 139, g:  69, b:  19 },
+    'Blight Dark':     { bg: '#1a1a0a', spots: '#2d2d00', r:  30, g:  30, b:   5 },
+    'Yellow Curl':     { bg: '#d4c832', spots: '#a0971a', r: 212, g: 200, b:  20 },
+    'Random Noise':    null,
+  };
+  const p = patterns[label];
+  if (!p) {
+    // pure random noise
+    const imgData = ctx.createImageData(IMG_SIZE, IMG_SIZE);
+    for (let i = 0; i < imgData.data.length; i += 4) {
+      imgData.data[i]   = Math.random() * 255;
+      imgData.data[i+1] = Math.random() * 255;
+      imgData.data[i+2] = Math.random() * 255;
+      imgData.data[i+3] = 255;
+    }
+    ctx.putImageData(imgData, 0, 0);
+  } else {
+    ctx.fillStyle = p.bg;
+    ctx.fillRect(0, 0, IMG_SIZE, IMG_SIZE);
+    // add 20 random spots
+    for (let i = 0; i < 20; i++) {
+      ctx.beginPath();
+      ctx.arc(
+        Math.random() * IMG_SIZE,
+        Math.random() * IMG_SIZE,
+        5 + Math.random() * 20,
+        0, Math.PI * 2
+      );
+      ctx.fillStyle = p.spots;
+      ctx.fill();
+    }
+  }
+  return c;
+}
+
+// ─── Run one inference ────────────────────────────────────────────
+async function runInference(canvas) {
+  const tf = window.tf;
+  const input = preprocessImage(canvas);
+  const t = tf.tensor4d(input, [1, IMG_SIZE, IMG_SIZE, 3]);
+  const t0 = performance.now();
+  const output = tfliteModel.predict(t);
+  const ms = performance.now() - t0;
+  const scores = await (Array.isArray(output) ? output[0] : output).data();
+  console.log('[Inference debug] scores length:', scores.length, 'scores sum:', Array.from(scores).reduce((a,b)=>a+b, 0));
+  console.log('[Inference debug] top 5 scores:', Array.from(scores).map((s,i)=>({i, s})).sort((a,b)=>b.s-a.s).slice(0, 5));
+  t.dispose();
+  if (!Array.isArray(output) && output.dispose) output.dispose();
+
+  let classIndex = 0, confidence = scores[0];
+  for (let i = 1; i < scores.length; i++) {
+    if (scores[i] > confidence) { confidence = scores[i]; classIndex = i; }
+  }
+
+  const top5 = Array.from(scores)
+    .map((s, idx) => {
+      const cropVal = cropFromIndex(idx);
+      const dId = classMap[String(idx)] ?? '(unknown)';
+      const dName = dId.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+      return { index: idx, crop: cropVal, diseaseId: dId, diseaseName: dName, score: s };
+    })
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 5);
+
+  const confPct = (confidence * 100).toFixed(1);
+  const winning = top5[0];
+  const crop = winning.crop;
+  const diseaseId = winning.diseaseId;
+  const diseaseName = winning.diseaseName;
+
+  return { classIndex, crop, diseaseId, diseaseName, confPct, ms: ms.toFixed(0), top5 };
+}
+
+// ─── Render result row ────────────────────────────────────────────
+function resultRow(label, res, passed) {
+  testStats.total++;
+  if (passed) testStats.passed++; else testStats.failed++;
+  testStats.times.push(Number(res.ms));
+  return `
+    <tr>
+      <td>${label}</td>
+      <td><span class="badge ${cropBadgeClass(res.crop)}">${res.crop}</span></td>
+      <td>${res.diseaseName}</td>
+      <td>
+        ${res.confPct}%
+        <div class="conf-bar"><div class="conf-fill" style="width:${res.confPct}%"></div></div>
+      </td>
+      <td>${res.ms} ms</td>
+      <td><span class="badge ${passed ? 'ok' : 'fail'}">${passed ? '✓ OK' : '✗ FAIL'}</span></td>
+    </tr>`;
+}
+
+function updateSummary() {
+  const avg = testStats.times.length
+    ? (testStats.times.reduce((a,b)=>a+b,0) / testStats.times.length).toFixed(0)
+    : '—';
+  document.getElementById('sum-total').textContent  = testStats.total;
+  document.getElementById('sum-passed').textContent = testStats.passed;
+  document.getElementById('sum-failed').textContent = testStats.failed;
+  document.getElementById('sum-time').textContent   = avg + ' ms';
+  document.getElementById('summary-card').style.display = '';
+}
+
+// ─── Health check ─────────────────────────────────────────────────
+async function runHealthCheck() {
+  const statusEl = document.getElementById('health-status');
+
+  log('Checking model file…');
+  const modelResp = await fetch(MODEL_URL, { method: 'HEAD' });
+  if (!modelResp.ok) {
+    log(`✗ Model file not found at ${MODEL_URL}  (HTTP ${modelResp.status})`);
+    statusEl.className = 'status fail';
+    statusEl.textContent = '✗ Model file missing';
+    return false;
+  }
+  const sizeKB = (9243456 / 1024).toFixed(0);
+  log(`✓ Model file accessible  (≈ ${sizeKB} KB)`);
+
+  log('\nLoading class map…');
+  const mapResp = await fetch(CLASSMAP_URL);
+  if (!mapResp.ok) {
+    log(`✗ Class map not found at ${CLASSMAP_URL}`);
+    statusEl.className = 'status fail';
+    statusEl.textContent = '✗ Class map missing';
+    return false;
+  }
+  classMap = await mapResp.json();
+  log(`✓ Class map loaded  (${Object.keys(classMap).length} classes)`);
+  log('  Sample → "0": ' + classMap['0'] + ', "19": ' + classMap['19'] + ', "39": ' + classMap['39']);
+  log('\nLoading TFLite WASM runtime…');
+  try {
+    const tflite = window.tflite;
+    if (!tflite) {
+      throw new Error('window.tflite is undefined. Please ensure the CDN scripts loaded correctly.');
+    }
+    tflite.setWasmPath('/wasm/');
+    log('✓ TFLite WASM runtime loaded');
+
+    log('\nLoading TFLite model…');
+    tfliteModel = await tflite.loadTFLiteModel(MODEL_URL);
+    log('✓ Model ready!');
+    log('  Inputs:  ' + JSON.stringify(tfliteModel.inputs?.map(t => ({ name: t.name, shape: t.shape, dtype: t.dtype }))));
+    log('  Outputs: ' + JSON.stringify(tfliteModel.outputs?.map(t => ({ name: t.name, shape: t.shape, dtype: t.dtype }))));
+
+    statusEl.className = 'status ok';
+    statusEl.textContent = '✓ Model loaded and ready';
+    document.getElementById('run-synthetic-btn').disabled = false;
+    return true;
+  } catch (e) {
+    log('✗ Failed to load model: ' + e.message);
+    statusEl.className = 'status fail';
+    statusEl.textContent = '✗ Model load failed';
+    return false;
+  }
+}
+
+// ─── Synthetic tests ──────────────────────────────────────────────
+document.getElementById('run-synthetic-btn').addEventListener('click', async () => {
+  const btn = document.getElementById('run-synthetic-btn');
+  btn.disabled = true;
+  btn.textContent = 'Running…';
+
+  const patterns = ['Healthy Green', 'Rust Brown', 'Blight Dark', 'Yellow Curl', 'Random Noise'];
+  let rows = '';
+
+  for (const label of patterns) {
+    try {
+      const canvas = makeSyntheticCanvas(label);
+      const res = await runInference(canvas);
+      // For synthetic tests just check that classIndex is in valid range
+      const passed = res.classIndex >= 0 && res.classIndex < 40;
+      rows += resultRow(label, res, passed);
+    } catch(e) {
+      rows += `<tr><td>${label}</td><td colspan="5"><span class="badge fail">✗ Error: ${e.message}</span></td></tr>`;
+      testStats.total++;
+      testStats.failed++;
+    }
+  }
+
+  document.getElementById('synthetic-results').innerHTML = `
+    <table>
+      <thead><tr>
+        <th>Test Pattern</th><th>Crop</th><th>Disease</th>
+        <th>Confidence</th><th>Time</th><th>Status</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+
+  updateSummary();
+  btn.textContent = 'Re-run Synthetic Tests';
+  btn.disabled = false;
+});
+
+// ─── Real image upload ────────────────────────────────────────────
+document.getElementById('img-upload').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const resultEl = document.getElementById('upload-result');
+  if (!tfliteModel) {
+    resultEl.innerHTML = '<div style="color:#e76f51;margin-top:10px;font-size:0.85rem;font-weight:bold">✗ Model not loaded yet. Please wait for model initialization or check the Health Check log.</div>';
+    return;
+  }
+  resultEl.innerHTML = '<div style="margin-top:10px;font-size:0.82rem;color:#74c69d"><span class="spinner"></span> Running inference…</div>';
+
+  try {
+    const img = new Image();
+    img.src = URL.createObjectURL(file);
+    await new Promise(r => img.onload = r);
+
+    const res = await runInference(img);
+
+    const top5Html = res.top5.map(item => `
+      <div style="display:flex; justify-content:space-between; font-size:0.75rem; color:#95d5b2; margin-top:4px;">
+        <span>Index ${item.index}: [${item.crop}] ${item.diseaseName}</span>
+        <span style="font-weight:600; color:#52b788;">${(item.score * 100).toFixed(1)}%</span>
+      </div>
+    `).join('');
+
+    resultEl.innerHTML = `
+      <div style="display:flex;gap:16px;margin-top:14px;align-items:flex-start;flex-wrap:wrap">
+        <img src="${img.src}" style="width:100px;height:100px;object-fit:cover;border-radius:12px;border:2px solid #2d6a4f" />
+        <div style="flex:1;min-width:200px">
+          <div style="margin-bottom:8px">
+            <span class="badge ${cropBadgeClass(res.crop)}">${res.crop}</span>
+          </div>
+          <div style="font-size:1.1rem;font-weight:700;color:#95d5b2;margin-bottom:4px">${res.diseaseName}</div>
+          <div style="font-size:0.78rem;color:#52796f;margin-bottom:8px">Disease ID: <code>${res.diseaseId}</code></div>
+          <div style="font-size:0.82rem">
+            Confidence: <strong>${res.confPct}%</strong>
+            <div class="conf-bar" style="max-width:200px"><div class="conf-fill" style="width:${res.confPct}%"></div></div>
+          </div>
+          <div style="font-size:0.78rem;color:#52796f;margin-top:6px;margin-bottom:12px;">⚡ ${res.ms} ms inference time</div>
+          
+          <div style="border-top:1px dashed #2d6a4f33; padding-top:10px;">
+            <div style="font-size:0.75rem; text-transform:uppercase; color:#52796f; font-weight:700; margin-bottom:6px;">Top 5 Predictions:</div>
+            ${top5Html}
+          </div>
+        </div>
+      </div>`;
+    testStats.total++;
+    testStats.passed++;
+    testStats.times.push(Number(res.ms));
+    updateSummary();
+  } catch(e) {
+    resultEl.innerHTML = `<div style="color:#e76f51;margin-top:10px">✗ Inference error: ${e.message}</div>`;
+  }
+});
+
+// ─── Boot ─────────────────────────────────────────────────────────
+runHealthCheck();
+</script>
+</body>
+</html>

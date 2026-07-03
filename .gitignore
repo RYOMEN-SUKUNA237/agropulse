@@ -1,0 +1,19 @@
+node_modules/
+build/
+dist/
+coverage/
+.DS_Store
+*.log
+.env*
+!.env.example
+
+# secrets — never commit the Kaggle API token
+kaggle.json
+
+# python caches / local scratch / training staging
+__pycache__/
+scratch/
+
+# large training artifacts (the app only needs the .tflite + classes.json)
+*.keras
+public/models/backup_*/
