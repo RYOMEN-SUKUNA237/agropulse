@@ -1,6 +1,14 @@
 {
-  "buildCommand": "npm run build",
-  "outputDirectory": "dist",
-  "framework": "vite",
-  "trailingSlash": false
+  "services": {
+    "frontend": {
+      "buildCommand": "npm run build",
+      "outputDirectory": "dist",
+      "framework": "vite"
+    }
+  },
+  "trailingSlash": false,
+  "routes": [
+    { "src": "/models/(.*)", "dest": "/models/$1" },
+    { "src": "/(.*)", "dest": "/" }
+  ]
 }
