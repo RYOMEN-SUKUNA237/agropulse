@@ -1,0 +1,10 @@
+backend/
+brain/
+scratch/
+*.py
+.env
+.env.*
+!.env.example
+kaggle.json
+*.keras
+public/models/backup_*/
